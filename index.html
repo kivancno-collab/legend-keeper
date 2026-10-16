@@ -622,11 +622,10 @@ async function doLogin(){
   if(!u || !p){ errEl.textContent='Kullanıcı adı ve şifre gerekli'; return; }
   btn.disabled = true; btn.textContent = 'Giriş yapılıyor...';
   try {
-    const { data, error } = await sb.from('teams').select('*').eq('username', u).maybeSingle();
+    const { data, error } = await sb.rpc('login_team', { p_username: u, p_password: p });
     if(error) throw error;
-    if(!data){ errEl.textContent='Kullanıcı bulunamadı'; return; }
-    if(data.password !== p){ errEl.textContent='Şifre yanlış'; return; }
-    currentTeam = data;
+    if(!data || data.length === 0){ errEl.textContent='Kullanıcı adı veya şifre yanlış'; return; }
+    currentTeam = data[0];
     document.getElementById('password').value='';
     if(data.is_commissioner){ await loadCommissioner(); showScreen('commScreen'); }
     else { await loadMyTeam(); showScreen('dashScreen'); }
@@ -780,7 +779,7 @@ async function saveKeepers(){
 async function loadCommissioner(){
   const grid=document.getElementById('commGrid');
   grid.innerHTML='<div class="comm-none">Yükleniyor...</div>';
-  const { data:teams, error:te } = await sb.from('teams').select('*').eq('is_commissioner',false).order('final_rank',{nullsFirst:false});
+  const { data:teams, error:te } = await sb.from('teams').select('id,name,final_rank,is_lottery').eq('is_commissioner',false).order('final_rank',{nullsFirst:false});
   if(te){ grid.innerHTML='<div class="comm-none">Hata: '+te.message+'</div>'; return; }
   const { data:players, error:pe } = await sb.from('players').select('*');
   if(pe){ grid.innerHTML='<div class="comm-none">Hata: '+pe.message+'</div>'; return; }
